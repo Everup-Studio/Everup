@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Everup — Текстовая RPG Песочница</title>
+
+<link rel="icon" href="static/favicon.svg?v=1" type="image/svg+xml">
+
+<script>
+  (function() {
+    let theme = 'light';
+    try {
+      theme = localStorage.getItem('everup-theme') || window.name || 'light';
+    } catch (e) {
+      theme = window.name || 'light';
+    }
+    if (theme !== 'light' && theme !== 'dark') theme = 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+
+<style>
+:root {
+  --brand-dark: #2C0B4E; --brand-main: #7B2F9D; --brand-light: #b15ce0;
+  --bg: #fafaf7; --surface: #ffffff; --surface-hover: #f5f5f0;
+  --text: #1a1a1a; --text-muted: #6b6b6b; --border: #e5e5e0; --border-strong: #d0d0c8;
+  --accent: var(--brand-main); --accent-hover: var(--brand-dark); --accent-light: #f2e8f7; --accent-text: #ffffff;
+  --danger: #c0392b; --shadow: 0 1px 3px rgba(0,0,0,0.06); --radius: 10px; --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+[data-theme="dark"] {
+  --bg: #14161a; --surface: #1c1f24; --surface-hover: #23272e; --text: #e8e8e8; --text-muted: #909090;
+  --border: #2a2f36; --border-strong: #3a4048; --accent: var(--brand-light); --accent-hover: #c97bef; --accent-light: #2a1738; --accent-text: #0e1410;
+  --danger: #e57373; --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; overflow-x: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; font-size: 15px; display: flex; flex-direction: column; min-height: 100vh; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Шапка (ПК версия) */
+#header { 
+  position: sticky; top: 0; z-index: 100; 
+  background: var(--surface); border-bottom: 1px solid var(--border); 
+  padding: 12px 20px; display: flex; align-items: center; gap: 20px; 
+  box-shadow: var(--shadow); 
+  flex-wrap: nowrap; 
+}
+.header-spacer { flex: 1; }
+
+.logo { 
+  font-weight: 800; font-size: 20px; cursor: pointer; 
+  background: linear-gradient(135deg, var(--brand-dark), var(--brand-main)); 
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+  flex-shrink: 0;
+}
+[data-theme="dark"] .logo { 
+  background: linear-gradient(135deg, var(--brand-main), var(--brand-light)); 
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+}
+
+.nav-links { display: flex; gap: 16px; flex-shrink: 0; }
+.nav-links a { color: var(--text-muted); font-weight: 500; font-size: 15px; }
+.nav-links a:hover, .nav-links a.active { color: var(--accent); text-decoration: none; }
+
+.header-btn { 
+  padding: 8px 14px; background: var(--accent-light); color: var(--accent); 
+  border: 1px solid var(--border); border-radius: 8px; cursor: pointer; 
+  font-family: inherit; font-size: 14px; font-weight: 500; 
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; 
+  flex-shrink: 0;
+}
+.header-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+/* Базовые стили для поиска */
+.search-box { width: 250px; flex-shrink: 0; }
+.search-box input {
+  width: 100%; padding: 8px 14px; border: 1px solid var(--border); border-radius: 20px;
+  background: var(--bg); color: var(--text); font-family: inherit; font-size: 14px;
+}
+
+/* ЖЕСТКИЕ ПРАВИЛА ДЛЯ КОНТЕЙНЕРА ПОИСКА И КОРЗИНЫ */
+.db-sticky-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 10px;
+}
+
+footer { text-align: center; padding: 24px 20px; color: var(--text-muted); font-size: 13px; border-top: 1px solid var(--border); background: var(--surface); margin-top: auto; }
+
+/* КНОПКА СКРОЛЛА */
+.scroll-btn {
+  position: fixed; bottom: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%;
+  background-color: var(--bg); color: var(--text); border: 1px solid var(--border-strong);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15); display: none; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 999; transition: background-color 0.2s, color 0.2s; padding: 0;
+}
+.scroll-btn.visible { display: flex; }
+.scroll-btn svg { width: 18px; height: 18px; display: block; }
+.scroll-btn:hover { background-color: var(--brand-main); color: #ffffff; border-color: var(--brand-main); }
+
+/* МОБИЛЬНАЯ АДАПТАЦИЯ */
+@media (max-width: 768px) {
+  #header { 
+    position: static; 
+    display: flex; 
+    flex-wrap: wrap; 
+    padding: 12px 15px; 
+    gap: 15px;
+    background: var(--surface);
+    border-bottom: none;
+  }
+  
+  .logo { order: 1; }
+  #theme-btn { order: 2; margin-left: auto; }
+  .nav-links { 
+    order: 3; 
+    width: 100%; 
+    justify-content: space-between; 
+    margin-bottom: 5px;
+  }
+  .header-spacer { display: none; }
+  
+  /* Липкий блок поиска и корзины */
+  .db-sticky-row {
+    order: 4;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: calc(100% + 30px);
+    margin: 0 -15px -12px -15px;
+    padding: 10px 15px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 6px -2px rgba(0,0,0,0.1);
+    gap: 15px;
+  }
+  
+  .db-sticky-row .search-box { flex: 1; width: 100%; margin: 0; }
+  .db-sticky-row #cart-btn { flex-shrink: 0; margin: 0; }
+}
+
+
+<style>
+.hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 80px 20px; background: linear-gradient(180deg, var(--accent-light) 0%, transparent 100%); width: 100%; box-sizing: border-box; }
+.hero h1 { font-size: 48px; margin: 0 0 16px; background: linear-gradient(135deg, var(--brand-dark), var(--brand-main)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; width: 100%; text-align: center; }
+[data-theme="dark"] .hero h1 { background: linear-gradient(135deg, var(--text), var(--brand-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { font-size: 18px; color: var(--text-muted); max-width: 700px; margin: 0 auto 32px; text-align: center; }
+.btn-hero { display: block !important; width: max-content !important; margin: 0 auto !important; align-self: center !important; padding: 14px 32px; background: var(--accent); color: var(--accent-text); border-radius: 30px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(123, 47, 157, 0.3); transition: all 0.2s; text-decoration: none; }
+.btn-hero:hover { transform: translateY(-2px); text-decoration: none; box-shadow: 0 6px 20px rgba(123, 47, 157, 0.4); }
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+.feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 32px; text-align: center; box-shadow: var(--shadow); }
+.feature-icon { font-size: 40px; margin-bottom: 16px; }
+
+@media (max-width: 768px) {
+  .hero h1 { font-size: 32px; }
+  .hero p { font-size: 16px; }
+  .features-grid { grid-template-columns: 1fr; padding: 0 16px; }
+  .feature-card { padding: 20px; }
+}
+</style>
+
+</style>
+</head>
+<body>
+
+<header id="header">
+  <div class="logo" onclick="window.location.href='index.html'">EVERUP</div>
+  
+  <nav class="nav-links">
+    <a href="index.html" class="active">Главная</a>
+    <a href="database.html" >База Знаний</a>
+    <a href="tools.html" >Инструменты</a>
+  </nav>
+  
+  <div class="header-spacer"></div>
+  
+  
+  
+  <button class="header-btn" id="theme-btn" title="Переключить тему">🌙</button>
+</header>
+
+
+<section class="hero">
+  <h1>Твоя история в Эверапе</h1>
+  <p>Everup — это текстовая фэнтези-RPG в жанре «Ролевая песочница» с бесконечным процедурно генерируемым миром. Здесь нет классов и обязательных сценариев. Только ты, твои навыки и мир, который запоминает каждый твой шаг.</p>
+  <a href="database.html" class="btn-hero">Войти в Базу Знаний</a>
+</section>
+
+<section class="features-grid">
+  <div class="feature-card">
+    <div class="feature-icon">🪄</div>
+    <h3>Полная свобода</h3>
+    <p>Нет главного квеста и рельс. Изучай магию, становись торговцем или иди воевать.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🌍</div>
+    <h3>Живой мир</h3>
+    <p>Города перестраиваются, NPC стареют и умирают, рождаются новые легенды. Время не стоит на месте.</p>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📚</div>
+    <h3>Модульность</h3>
+    <p>Используй только те правила, которые тебе нравятся. Собери свою уникальную версию игры.</p>
+  </div>
+</section>
+
+
+<footer>
+  Everup — текстовая фэнтези-RPG · Официальный сайт · <a href="https://vk.com/everup_rpg" target="_blank" rel="noopener">Группа ВК</a>
+</footer>
+
+<button id="scroll-btn" class="scroll-btn" title="Наверх">
+  <svg id="scroll-icon-up" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  <svg id="scroll-icon-down" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+</button>
+
+<script>
+  const themeBtn = document.getElementById('theme-btn');
+  let currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  themeBtn.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+
+  themeBtn.addEventListener('click', () => {
+    currentTheme = document.documentElement.getAttribute('data-theme');
+    const next = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    window.name = next; 
+    try { localStorage.setItem('everup-theme', next); } catch (e) {}
+    themeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+  });
+
+  const scrollBtn = document.getElementById('scroll-btn');
+  const iconUp = document.getElementById('scroll-icon-up');
+  const iconDown = document.getElementById('scroll-icon-down');
+  let scrollState = 'up';
+  let savedScrollPos = 0;
+  let isAutoScrolling = false;
+
+  window.addEventListener('scroll', () => {
+    if (isAutoScrolling) return; 
+    const currentScroll = window.scrollY;
+    if (scrollState === 'up') {
+      if (currentScroll > window.innerHeight) scrollBtn.classList.add('visible');
+      else if (currentScroll < 50) scrollBtn.classList.remove('visible');
+    } else if (scrollState === 'down') {
+      if (currentScroll > 50) {
+        scrollState = 'up'; iconUp.style.display = 'block'; iconDown.style.display = 'none'; scrollBtn.classList.add('visible');
+      }
+    }
+  });
+
+  scrollBtn.addEventListener('click', () => {
+    isAutoScrolling = true;
+    if (scrollState === 'up') {
+      savedScrollPos = window.scrollY;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollState = 'down'; iconUp.style.display = 'none'; iconDown.style.display = 'block'; scrollBtn.title = 'Вернуться обратно';
+    } else {
+      window.scrollTo({ top: savedScrollPos, behavior: 'smooth' });
+      scrollState = 'up'; iconUp.style.display = 'block'; iconDown.style.display = 'none'; scrollBtn.title = 'Наверх';
+    }
+    setTimeout(() => { isAutoScrolling = false; }, 800); 
+  });
+</script>
+
+</body>
+</html>
